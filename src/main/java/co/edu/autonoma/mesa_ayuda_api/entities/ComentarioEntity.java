@@ -1,4 +1,4 @@
-package co.edu.autonoma.mesa_ayuda_api.dto;
+package co.edu.autonoma.mesa_ayuda_api.entities;
 
 import java.time.LocalDateTime;
 
