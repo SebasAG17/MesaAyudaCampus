@@ -18,7 +18,7 @@ public class SolicitudEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, length = 140)
     private String titulo;
