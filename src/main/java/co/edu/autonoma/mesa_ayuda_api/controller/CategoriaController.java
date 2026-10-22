@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,6 +44,15 @@ public class CategoriaController {
         return ResponseEntity
                 .created(URI.create("/api/categorias/" + creada.id()))
                 .body(creada);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoriaResponse> reemplazar(
+            @PathVariable Integer id,
+            @RequestBody CategoriaRequest peticion) {
+        return categoriaService.reemplazar(id, peticion)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }

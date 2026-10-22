@@ -39,6 +39,16 @@ public class CategoriaService {
         return aRespuesta(categoriaRepository.save(categoria));
     }
 
+    public Optional<CategoriaResponse> reemplazar(Integer id, CategoriaRequest peticion) {
+        return categoriaRepository.findById(id)
+                .map(categoria -> {
+                    categoria.setNombre(peticion.nombre());
+                    categoria.setPrioridadBase(peticion.prioridadBase());
+                    categoria.setActiva(peticion.activa() == null || peticion.activa());
+                    return aRespuesta(categoriaRepository.save(categoria));
+                });
+    }
+
     private CategoriaResponse aRespuesta(CategoriaEntity categoria) {
         return new CategoriaResponse(
                 categoria.getId(),
