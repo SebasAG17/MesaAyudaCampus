@@ -49,6 +49,17 @@ public class CategoriaService {
                 });
     }
 
+    /** Borrado logico: conserva la fila y la marca como inactiva. */
+    public boolean desactivar(Integer id) {
+        return categoriaRepository.findById(id)
+                .map(categoria -> {
+                    categoria.setActiva(false);
+                    categoriaRepository.save(categoria);
+                    return true;
+                })
+                .orElse(false);
+    }
+
     private CategoriaResponse aRespuesta(CategoriaEntity categoria) {
         return new CategoriaResponse(
                 categoria.getId(),
