@@ -51,6 +51,17 @@ public class UsuarioService {
                 });
     }
 
+    /** Borrado logico: conserva la fila y la marca como inactiva. */
+    public boolean desactivar(Integer id) {
+        return usuarioRepository.findById(id)
+                .map(usuario -> {
+                    usuario.setActivo(false);
+                    usuarioRepository.save(usuario);
+                    return true;
+                })
+                .orElse(false);
+    }
+
     private UsuarioResponse aRespuesta(UsuarioEntity usuario) {
         return new UsuarioResponse(
                 usuario.getId(),
