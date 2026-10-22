@@ -40,6 +40,17 @@ public class UsuarioService {
         return aRespuesta(usuarioRepository.save(usuario));
     }
 
+    public Optional<UsuarioResponse> reemplazar(Integer id, UsuarioRequest peticion) {
+        return usuarioRepository.findById(id)
+                .map(usuario -> {
+                    usuario.setNombre(peticion.nombre());
+                    usuario.setCorreo(peticion.correo());
+                    usuario.setRol(peticion.rol());
+                    usuario.setActivo(peticion.activo() == null || peticion.activo());
+                    return aRespuesta(usuarioRepository.save(usuario));
+                });
+    }
+
     private UsuarioResponse aRespuesta(UsuarioEntity usuario) {
         return new UsuarioResponse(
                 usuario.getId(),
