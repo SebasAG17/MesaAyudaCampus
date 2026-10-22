@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import co.edu.autonoma.mesa_ayuda_api.dto.CategoriaRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.CategoriaResponse;
 import co.edu.autonoma.mesa_ayuda_api.entities.CategoriaEntity;
 import co.edu.autonoma.mesa_ayuda_api.repository.CategoriaRepository;
@@ -28,6 +29,14 @@ public class CategoriaService {
     public Optional<CategoriaResponse> buscarPorId(Integer id) {
         return categoriaRepository.findById(id)
                 .map(this::aRespuesta);
+    }
+
+    public CategoriaResponse crear(CategoriaRequest peticion) {
+        CategoriaEntity categoria = new CategoriaEntity();
+        categoria.setNombre(peticion.nombre());
+        categoria.setPrioridadBase(peticion.prioridadBase());
+        categoria.setActiva(peticion.activa() == null || peticion.activa());
+        return aRespuesta(categoriaRepository.save(categoria));
     }
 
     private CategoriaResponse aRespuesta(CategoriaEntity categoria) {
