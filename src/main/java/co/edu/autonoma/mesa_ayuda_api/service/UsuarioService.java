@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import co.edu.autonoma.mesa_ayuda_api.dto.UsuarioRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.UsuarioResponse;
 import co.edu.autonoma.mesa_ayuda_api.entities.UsuarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.repository.UsuarioRepository;
@@ -28,6 +29,15 @@ public class UsuarioService {
     public Optional<UsuarioResponse> buscarPorId(Integer id) {
         return usuarioRepository.findById(id)
                 .map(this::aRespuesta);
+    }
+
+    public UsuarioResponse crear(UsuarioRequest peticion) {
+        UsuarioEntity usuario = new UsuarioEntity();
+        usuario.setNombre(peticion.nombre());
+        usuario.setCorreo(peticion.correo());
+        usuario.setRol(peticion.rol());
+        usuario.setActivo(peticion.activo() == null || peticion.activo());
+        return aRespuesta(usuarioRepository.save(usuario));
     }
 
     private UsuarioResponse aRespuesta(UsuarioEntity usuario) {
