@@ -65,6 +65,24 @@ public class ComentarioService {
         return Optional.of(aRespuesta(comentarioRepository.save(comentario)));
     }
 
+    @Transactional
+    public Optional<ComentarioResponse> reemplazar(Integer id, ComentarioRequest peticion) {
+        Optional<ComentarioEntity> existente = comentarioRepository.findById(id);
+        Optional<SolicitudEntity> solicitud = solicitudRepository.findById(peticion.solicitudId());
+        Optional<UsuarioEntity> autor = usuarioRepository.findById(peticion.autorId());
+        if (existente.isEmpty() || solicitud.isEmpty() || autor.isEmpty()) {
+            return Optional.empty();
+        }
+
+        ComentarioEntity comentario = existente.get();
+        comentario.setSolicitud(solicitud.get());
+        comentario.setAutor(autor.get());
+        comentario.setTexto(peticion.texto());
+        comentario.setInterno(Boolean.TRUE.equals(peticion.interno()));
+        comentario.setEsSolucion(Boolean.TRUE.equals(peticion.esSolucion()));
+        return Optional.of(aRespuesta(comentarioRepository.save(comentario)));
+    }
+
     private ComentarioResponse aRespuesta(ComentarioEntity comentario) {
         return new ComentarioResponse(
                 comentario.getId(),
