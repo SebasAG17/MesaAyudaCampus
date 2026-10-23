@@ -88,6 +88,15 @@ public class HistorialEstadoService {
         return Optional.of(aRespuesta(historialEstadoRepository.save(historial)));
     }
 
+    @Transactional
+    public boolean eliminar(Integer id) {
+        if (!historialEstadoRepository.existsById(id)) {
+            return false;
+        }
+        historialEstadoRepository.deleteById(id);
+        return true;
+    }
+
     private ComentarioEntity buscarComentario(Integer comentarioId) {
         return comentarioId == null ? null : comentarioRepository.findById(comentarioId).orElse(null);
     }
