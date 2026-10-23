@@ -86,6 +86,15 @@ public class SolicitudService {
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
     }
 
+    /** Borrado fisico: la solicitud no tiene bandera de activo. */
+    public boolean eliminar(Integer id) {
+        if (!solicitudRepository.existsById(id)) {
+            return false;
+        }
+        solicitudRepository.deleteById(id);
+        return true;
+    }
+
     private UsuarioEntity buscarTecnico(Integer tecnicoId) {
         return tecnicoId == null ? null : usuarioRepository.findById(tecnicoId).orElse(null);
     }
