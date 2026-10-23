@@ -56,4 +56,100 @@ public class SolicitudEntity {
     @Column(name = "cerrada_en")
     private LocalDateTime cerradaEn;
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public CategoriaEntity getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(CategoriaEntity categoria) {
+        this.categoria = categoria;
+    }
+
+    public String getImpacto() {
+        return impacto;
+    }
+
+    public void setImpacto(String impacto) {
+        this.impacto = impacto;
+    }
+
+    public String getPrioridad() {
+        return prioridad;
+    }
+
+    public void setPrioridad(String prioridad) {
+        this.prioridad = prioridad;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public UsuarioEntity getSolicitante() {
+        return solicitante;
+    }
+
+    public void setSolicitante(UsuarioEntity solicitante) {
+        this.solicitante = solicitante;
+    }
+
+    public UsuarioEntity getTecnico() {
+        return tecnico;
+    }
+
+    public void setTecnico(UsuarioEntity tecnico) {
+        this.tecnico = tecnico;
+    }
+
+    public LocalDateTime getCreadaEn() {
+        return creadaEn;
+    }
+
+    public void setCreadaEn(LocalDateTime creadaEn) {
+        this.creadaEn = creadaEn;
+    }
+
+    public LocalDateTime getCerradaEn() {
+        return cerradaEn;
+    }
+
+    public void setCerradaEn(LocalDateTime cerradaEn) {
+        this.cerradaEn = cerradaEn;
+    }
+
 }
