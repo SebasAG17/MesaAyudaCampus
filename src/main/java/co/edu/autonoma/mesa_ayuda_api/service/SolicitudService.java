@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudResponse;
@@ -31,6 +32,7 @@ public class SolicitudService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<SolicitudResponse> listar() {
         return solicitudRepository.findAll()
                 .stream()
@@ -38,12 +40,14 @@ public class SolicitudService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Optional<SolicitudResponse> buscarPorId(Integer id) {
         return solicitudRepository.findById(id)
                 .map(this::aRespuesta);
     }
 
     /** Vacio si la categoria o el solicitante referenciados no existen. */
+    @Transactional
     public Optional<SolicitudResponse> crear(SolicitudRequest peticion) {
         Optional<CategoriaEntity> categoria = categoriaRepository.findById(peticion.categoriaId());
         Optional<UsuarioEntity> solicitante = usuarioRepository.findById(peticion.solicitanteId());
@@ -65,6 +69,7 @@ public class SolicitudService {
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
     }
 
+    @Transactional
     public Optional<SolicitudResponse> reemplazar(Integer id, SolicitudRequest peticion) {
         Optional<SolicitudEntity> existente = solicitudRepository.findById(id);
         Optional<CategoriaEntity> categoria = categoriaRepository.findById(peticion.categoriaId());
@@ -87,6 +92,7 @@ public class SolicitudService {
     }
 
     /** Borrado fisico: la solicitud no tiene bandera de activo. */
+    @Transactional
     public boolean eliminar(Integer id) {
         if (!solicitudRepository.existsById(id)) {
             return false;
