@@ -70,6 +70,24 @@ public class HistorialEstadoService {
         return Optional.of(aRespuesta(historialEstadoRepository.save(historial)));
     }
 
+    @Transactional
+    public Optional<HistorialEstadoResponse> reemplazar(Integer id, HistorialEstadoRequest peticion) {
+        Optional<HistorialEstadoEntity> existente = historialEstadoRepository.findById(id);
+        Optional<SolicitudEntity> solicitud = solicitudRepository.findById(peticion.solicitudId());
+        Optional<UsuarioEntity> usuario = usuarioRepository.findById(peticion.usuarioId());
+        if (existente.isEmpty() || solicitud.isEmpty() || usuario.isEmpty()) {
+            return Optional.empty();
+        }
+
+        HistorialEstadoEntity historial = existente.get();
+        historial.setSolicitud(solicitud.get());
+        historial.setEstadoAnterior(peticion.estadoAnterior());
+        historial.setEstadoNuevo(peticion.estadoNuevo());
+        historial.setUsuario(usuario.get());
+        historial.setComentario(buscarComentario(peticion.comentarioId()));
+        return Optional.of(aRespuesta(historialEstadoRepository.save(historial)));
+    }
+
     private ComentarioEntity buscarComentario(Integer comentarioId) {
         return comentarioId == null ? null : comentarioRepository.findById(comentarioId).orElse(null);
     }
