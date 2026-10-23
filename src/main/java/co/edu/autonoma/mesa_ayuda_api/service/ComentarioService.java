@@ -83,6 +83,21 @@ public class ComentarioService {
         return Optional.of(aRespuesta(comentarioRepository.save(comentario)));
     }
 
+    /**
+     * Borrado fisico. No elimina el comentario que sustenta el cierre de la
+     * solicitud (RN-04).
+     */
+    @Transactional
+    public boolean eliminar(Integer id) {
+        return comentarioRepository.findById(id)
+                .filter(comentario -> !comentario.isEsSolucion())
+                .map(comentario -> {
+                    comentarioRepository.delete(comentario);
+                    return true;
+                })
+                .orElse(false);
+    }
+
     private ComentarioResponse aRespuesta(ComentarioEntity comentario) {
         return new ComentarioResponse(
                 comentario.getId(),
