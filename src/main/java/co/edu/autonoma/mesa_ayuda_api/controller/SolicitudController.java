@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +45,15 @@ public class SolicitudController {
                         .created(URI.create("/api/solicitudes/" + creada.id()))
                         .body(creada))
                 .orElseGet(() -> ResponseEntity.badRequest().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SolicitudResponse> reemplazar(
+            @PathVariable Integer id,
+            @RequestBody SolicitudRequest peticion) {
+        return solicitudService.reemplazar(id, peticion)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }

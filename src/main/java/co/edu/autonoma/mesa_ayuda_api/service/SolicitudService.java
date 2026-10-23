@@ -65,6 +65,27 @@ public class SolicitudService {
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
     }
 
+    public Optional<SolicitudResponse> reemplazar(Integer id, SolicitudRequest peticion) {
+        Optional<SolicitudEntity> existente = solicitudRepository.findById(id);
+        Optional<CategoriaEntity> categoria = categoriaRepository.findById(peticion.categoriaId());
+        Optional<UsuarioEntity> solicitante = usuarioRepository.findById(peticion.solicitanteId());
+        if (existente.isEmpty() || categoria.isEmpty() || solicitante.isEmpty()) {
+            return Optional.empty();
+        }
+
+        SolicitudEntity solicitud = existente.get();
+        solicitud.setTitulo(peticion.titulo());
+        solicitud.setDescripcion(peticion.descripcion());
+        solicitud.setUbicacion(peticion.ubicacion());
+        solicitud.setCategoria(categoria.get());
+        solicitud.setImpacto(peticion.impacto());
+        solicitud.setPrioridad(peticion.prioridad());
+        solicitud.setEstado(peticion.estado() == null ? solicitud.getEstado() : peticion.estado());
+        solicitud.setSolicitante(solicitante.get());
+        solicitud.setTecnico(buscarTecnico(peticion.tecnicoId()));
+        return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
+    }
+
     private UsuarioEntity buscarTecnico(Integer tecnicoId) {
         return tecnicoId == null ? null : usuarioRepository.findById(tecnicoId).orElse(null);
     }
