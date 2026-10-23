@@ -1,13 +1,17 @@
 package co.edu.autonoma.mesa_ayuda_api.controller;
 
+import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.edu.autonoma.mesa_ayuda_api.dto.ComentarioRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.ComentarioResponse;
 import co.edu.autonoma.mesa_ayuda_api.service.ComentarioService;
 
@@ -31,6 +35,15 @@ public class ComentarioController {
         return comentarioService.buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<ComentarioResponse> crear(@RequestBody ComentarioRequest peticion) {
+        return comentarioService.crear(peticion)
+                .map(creado -> ResponseEntity
+                        .created(URI.create("/api/comentarios/" + creado.id()))
+                        .body(creado))
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
 }
