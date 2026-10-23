@@ -1,21 +1,34 @@
 package co.edu.autonoma.mesa_ayuda_api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudResponse;
+import co.edu.autonoma.mesa_ayuda_api.entities.CategoriaEntity;
+import co.edu.autonoma.mesa_ayuda_api.entities.UsuarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.SolicitudEntity;
+import co.edu.autonoma.mesa_ayuda_api.repository.CategoriaRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.SolicitudRepository;
+import co.edu.autonoma.mesa_ayuda_api.repository.UsuarioRepository;
 
 @Service
 public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public SolicitudService(SolicitudRepository solicitudRepository) {
+    public SolicitudService(
+            SolicitudRepository solicitudRepository,
+            CategoriaRepository categoriaRepository,
+            UsuarioRepository usuarioRepository) {
         this.solicitudRepository = solicitudRepository;
+        this.categoriaRepository = categoriaRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     public List<SolicitudResponse> listar() {
@@ -28,6 +41,32 @@ public class SolicitudService {
     public Optional<SolicitudResponse> buscarPorId(Integer id) {
         return solicitudRepository.findById(id)
                 .map(this::aRespuesta);
+    }
+
+    /** Vacio si la categoria o el solicitante referenciados no existen. */
+    public Optional<SolicitudResponse> crear(SolicitudRequest peticion) {
+        Optional<CategoriaEntity> categoria = categoriaRepository.findById(peticion.categoriaId());
+        Optional<UsuarioEntity> solicitante = usuarioRepository.findById(peticion.solicitanteId());
+        if (categoria.isEmpty() || solicitante.isEmpty()) {
+            return Optional.empty();
+        }
+
+        SolicitudEntity solicitud = new SolicitudEntity();
+        solicitud.setTitulo(peticion.titulo());
+        solicitud.setDescripcion(peticion.descripcion());
+        solicitud.setUbicacion(peticion.ubicacion());
+        solicitud.setCategoria(categoria.get());
+        solicitud.setImpacto(peticion.impacto());
+        solicitud.setPrioridad(peticion.prioridad());
+        solicitud.setEstado(peticion.estado() == null ? "ABIERTA" : peticion.estado());
+        solicitud.setSolicitante(solicitante.get());
+        solicitud.setTecnico(buscarTecnico(peticion.tecnicoId()));
+        solicitud.setCreadaEn(LocalDateTime.now());
+        return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
+    }
+
+    private UsuarioEntity buscarTecnico(Integer tecnicoId) {
+        return tecnicoId == null ? null : usuarioRepository.findById(tecnicoId).orElse(null);
     }
 
     private SolicitudResponse aRespuesta(SolicitudEntity solicitud) {
