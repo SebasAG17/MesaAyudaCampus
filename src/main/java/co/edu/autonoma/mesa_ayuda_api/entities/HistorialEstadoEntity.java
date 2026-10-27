@@ -41,4 +41,60 @@ public class HistorialEstadoEntity {
     @Column(name = "ocurrido_en", nullable = false)
     private LocalDateTime ocurridoEn;
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public SolicitudEntity getSolicitud() {
+        return solicitud;
+    }
+
+    public void setSolicitud(SolicitudEntity solicitud) {
+        this.solicitud = solicitud;
+    }
+
+    public String getEstadoAnterior() {
+        return estadoAnterior;
+    }
+
+    public void setEstadoAnterior(String estadoAnterior) {
+        this.estadoAnterior = estadoAnterior;
+    }
+
+    public String getEstadoNuevo() {
+        return estadoNuevo;
+    }
+
+    public void setEstadoNuevo(String estadoNuevo) {
+        this.estadoNuevo = estadoNuevo;
+    }
+
+    public UsuarioEntity getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(UsuarioEntity usuario) {
+        this.usuario = usuario;
+    }
+
+    public ComentarioEntity getComentario() {
+        return comentario;
+    }
+
+    public void setComentario(ComentarioEntity comentario) {
+        this.comentario = comentario;
+    }
+
+    public LocalDateTime getOcurridoEn() {
+        return ocurridoEn;
+    }
+
+    public void setOcurridoEn(LocalDateTime ocurridoEn) {
+        this.ocurridoEn = ocurridoEn;
+    }
+
 }

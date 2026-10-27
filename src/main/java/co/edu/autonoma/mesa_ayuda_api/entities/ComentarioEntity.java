@@ -40,4 +40,60 @@ public class ComentarioEntity {
     @Column(name = "creado_en", nullable = false)
     private LocalDateTime creadoEn;
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public SolicitudEntity getSolicitud() {
+        return solicitud;
+    }
+
+    public void setSolicitud(SolicitudEntity solicitud) {
+        this.solicitud = solicitud;
+    }
+
+    public UsuarioEntity getAutor() {
+        return autor;
+    }
+
+    public void setAutor(UsuarioEntity autor) {
+        this.autor = autor;
+    }
+
+    public String getTexto() {
+        return texto;
+    }
+
+    public void setTexto(String texto) {
+        this.texto = texto;
+    }
+
+    public boolean isInterno() {
+        return interno;
+    }
+
+    public void setInterno(boolean interno) {
+        this.interno = interno;
+    }
+
+    public boolean isEsSolucion() {
+        return esSolucion;
+    }
+
+    public void setEsSolucion(boolean esSolucion) {
+        this.esSolucion = esSolucion;
+    }
+
+    public LocalDateTime getCreadoEn() {
+        return creadoEn;
+    }
+
+    public void setCreadoEn(LocalDateTime creadoEn) {
+        this.creadoEn = creadoEn;
+    }
+
 }
