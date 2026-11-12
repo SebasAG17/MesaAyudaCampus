@@ -8,7 +8,6 @@ public record SolicitudRequest(
         String ubicacion,
         Integer categoriaId,
         Impacto impacto,
-        String estado,
         Integer solicitanteId
 ) {
 }

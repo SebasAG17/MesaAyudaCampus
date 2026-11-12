@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.AsignacionRequest;
+import co.edu.autonoma.mesa_ayuda_api.dto.CambioEstadoRequest;
+import co.edu.autonoma.mesa_ayuda_api.dto.HistorialEstadoResponse;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudResponse;
 import co.edu.autonoma.mesa_ayuda_api.service.SolicitudService;
 
@@ -40,6 +41,11 @@ public class SolicitudController {
         return solicitudService.buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/historial")
+    public List<HistorialEstadoResponse> listarHistorial(@PathVariable Integer id) {
+        return solicitudService.listarHistorial(id);
     }
 
     @PostMapping
@@ -69,11 +75,13 @@ public class SolicitudController {
         return ResponseEntity.ok(solicitudService.asignarTecnico(id, coordinadorId, peticion.tecnicoId()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        return solicitudService.eliminar(id)
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<SolicitudResponse> cambiarEstado(
+            @PathVariable Integer id,
+            @RequestHeader("X-Usuario-Id") Integer usuarioId,
+            @RequestBody CambioEstadoRequest peticion) {
+        return ResponseEntity.ok(solicitudService.cambiarEstado(
+                id, usuarioId, peticion.estado(), peticion.comentarioId()));
     }
 
 }

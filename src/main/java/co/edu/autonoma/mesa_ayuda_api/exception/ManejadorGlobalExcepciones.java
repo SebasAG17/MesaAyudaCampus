@@ -12,6 +12,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 
 import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
 import co.edu.autonoma.mesa_ayuda_api.domain.Prioridad;
+import co.edu.autonoma.mesa_ayuda_api.domain.Rol;
+import co.edu.autonoma.mesa_ayuda_api.domain.EstadoSolicitud;
 
 @RestControllerAdvice
 public class ManejadorGlobalExcepciones {
@@ -43,10 +45,16 @@ public class ManejadorGlobalExcepciones {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> manejarMensajeNoLegible(HttpMessageNotReadableException excepcion) {
-        String valores = "Impacto: " + String.join(", ", Arrays.stream(Impacto.values()).map(Enum::name).toList())
-                + ". Prioridad base: " + String.join(", ", Arrays.stream(Prioridad.values())
-                        .filter(prioridad -> prioridad != Prioridad.CRITICA).map(Enum::name).toList()) + ".";
+        String valores = "Impacto: " + nombres(Impacto.values())
+                + ". Prioridad: " + nombres(Prioridad.values())
+                + ". Prioridad base: " + nombres(Prioridad.BAJA, Prioridad.MEDIA, Prioridad.ALTA)
+                + ". Rol: " + nombres(Rol.values())
+                + ". Estado: " + nombres(EstadoSolicitud.values()) + ".";
         return crearRespuesta(HttpStatus.BAD_REQUEST, "El cuerpo contiene valores inválidos. " + valores);
+    }
+
+    private String nombres(Enum<?>... valores) {
+        return String.join(", ", Arrays.stream(valores).map(Enum::name).toList());
     }
 
     private ResponseEntity<ErrorResponse> crearRespuesta(HttpStatus estado, String mensaje) {
