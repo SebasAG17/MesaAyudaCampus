@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingRequestHeaderException;
 
 import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
 import co.edu.autonoma.mesa_ayuda_api.domain.Prioridad;
@@ -18,6 +19,21 @@ public class ManejadorGlobalExcepciones {
     @ExceptionHandler(ReglaNegocioException.class)
     public ResponseEntity<ErrorResponse> manejarReglaNegocio(ReglaNegocioException excepcion) {
         return crearRespuesta(HttpStatus.UNPROCESSABLE_ENTITY, excepcion.getMessage());
+    }
+
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ResponseEntity<ErrorResponse> manejarAccesoDenegado(AccesoDenegadoException excepcion) {
+        return crearRespuesta(HttpStatus.FORBIDDEN, excepcion.getMessage());
+    }
+
+    @ExceptionHandler(RecursoNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> manejarRecursoNoEncontrado(RecursoNoEncontradoException excepcion) {
+        return crearRespuesta(HttpStatus.NOT_FOUND, excepcion.getMessage());
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> manejarHeaderAusente(MissingRequestHeaderException excepcion) {
+        return crearRespuesta(HttpStatus.BAD_REQUEST, "Falta el encabezado requerido: " + excepcion.getHeaderName() + ".");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
