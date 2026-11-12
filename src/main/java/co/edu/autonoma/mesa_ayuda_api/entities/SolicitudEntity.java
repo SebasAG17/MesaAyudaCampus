@@ -16,8 +16,11 @@ import jakarta.persistence.Table;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.AccessLevel;
+import co.edu.autonoma.mesa_ayuda_api.domain.EstadoSolicitud;
 import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
 import co.edu.autonoma.mesa_ayuda_api.domain.Prioridad;
+import co.edu.autonoma.mesa_ayuda_api.exception.ReglaNegocioException;
 
 @Entity
 @Table(name = "solicitud")
@@ -51,7 +54,9 @@ public class SolicitudEntity {
     private Prioridad prioridad;
 
     @Column(nullable = false, length = 12)
-    private String estado;
+    @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
+    private EstadoSolicitud estado;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "solicitante_id", nullable = false)
@@ -66,5 +71,27 @@ public class SolicitudEntity {
 
     @Column(name = "cerrada_en")
     private LocalDateTime cerradaEn;
+
+    public void iniciar() {
+        if (id != null || estado != null) {
+            throw new ReglaNegocioException("La solicitud ya tiene un estado inicial.");
+        }
+        estado = EstadoSolicitud.ABIERTA;
+    }
+
+    public EstadoSolicitud transicionarA(EstadoSolicitud nuevo) {
+        if (estado == null || !estado.puedePasarA(nuevo)) {
+            String destinos = estado == null
+                    ? EstadoSolicitud.ABIERTA.name()
+                    : estado.destinosPermitidosComoTexto();
+            throw new ReglaNegocioException(
+                    "No se puede cambiar de " + (estado == null ? "SIN ESTADO" : estado.name())
+                            + " a " + (nuevo == null ? "SIN ESTADO" : nuevo.name())
+                            + ". Destinos permitidos: " + destinos + ".");
+        }
+        EstadoSolicitud anterior = estado;
+        estado = nuevo;
+        return anterior;
+    }
 
 }
