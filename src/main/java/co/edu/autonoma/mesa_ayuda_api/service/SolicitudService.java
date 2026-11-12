@@ -8,42 +8,45 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.autonoma.mesa_ayuda_api.domain.CalculadoraPrioridad;
+import co.edu.autonoma.mesa_ayuda_api.domain.EstadoSolicitud;
 import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
+import co.edu.autonoma.mesa_ayuda_api.domain.ReglasEstadoSolicitud;
 import co.edu.autonoma.mesa_ayuda_api.domain.Rol;
+import co.edu.autonoma.mesa_ayuda_api.dto.HistorialEstadoResponse;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudResponse;
 import co.edu.autonoma.mesa_ayuda_api.entities.CategoriaEntity;
-import co.edu.autonoma.mesa_ayuda_api.entities.HistorialEstadoEntity;
+import co.edu.autonoma.mesa_ayuda_api.entities.ComentarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.SolicitudEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.UsuarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.exception.ReglaNegocioException;
 import co.edu.autonoma.mesa_ayuda_api.exception.AccesoDenegadoException;
 import co.edu.autonoma.mesa_ayuda_api.exception.RecursoNoEncontradoException;
 import co.edu.autonoma.mesa_ayuda_api.repository.CategoriaRepository;
-import co.edu.autonoma.mesa_ayuda_api.repository.HistorialEstadoRepository;
+import co.edu.autonoma.mesa_ayuda_api.repository.ComentarioRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.SolicitudRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.UsuarioRepository;
 
 @Service
 public class SolicitudService {
 
-    private static final String ESTADO_ABIERTA = "ABIERTA";
-    private static final String ESTADO_ASIGNADA = "ASIGNADA";
-
     private final SolicitudRepository solicitudRepository;
     private final CategoriaRepository categoriaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final HistorialEstadoRepository historialEstadoRepository;
+    private final HistorialEstadoService historialEstadoService;
+    private final ComentarioRepository comentarioRepository;
 
     public SolicitudService(
             SolicitudRepository solicitudRepository,
             CategoriaRepository categoriaRepository,
             UsuarioRepository usuarioRepository,
-            HistorialEstadoRepository historialEstadoRepository) {
+            HistorialEstadoService historialEstadoService,
+            ComentarioRepository comentarioRepository) {
         this.solicitudRepository = solicitudRepository;
         this.categoriaRepository = categoriaRepository;
         this.usuarioRepository = usuarioRepository;
-        this.historialEstadoRepository = historialEstadoRepository;
+        this.historialEstadoService = historialEstadoService;
+        this.comentarioRepository = comentarioRepository;
     }
 
     @Transactional(readOnly = true)
@@ -77,31 +80,36 @@ public class SolicitudService {
         solicitud.setCategoria(categoria.get());
         solicitud.setImpacto(peticion.impacto());
         solicitud.setPrioridad(CalculadoraPrioridad.calcular(categoria.get().getPrioridadBase(), peticion.impacto()));
-        solicitud.setEstado(peticion.estado() == null ? "ABIERTA" : peticion.estado());
         solicitud.setSolicitante(solicitante.get());
         solicitud.setCreadaEn(LocalDateTime.now());
-        return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
+        solicitud.iniciar();
+        SolicitudEntity creada = solicitudRepository.save(solicitud);
+        historialEstadoService.registrar(creada, null, EstadoSolicitud.ABIERTA, solicitante.get(), null);
+        return Optional.of(aRespuesta(creada));
     }
 
     @Transactional
     public Optional<SolicitudResponse> reemplazar(Integer id, SolicitudRequest peticion) {
         Optional<SolicitudEntity> existente = solicitudRepository.findById(id);
+        if (existente.isEmpty()) {
+            return Optional.empty();
+        }
+        SolicitudEntity solicitud = existente.get();
+        if (solicitud.getEstado() == EstadoSolicitud.RESUELTA || solicitud.getEstado() == EstadoSolicitud.CERRADA) {
+            throw new ReglaNegocioException("No se puede editar una solicitud resuelta o cerrada.");
+        }
         Optional<CategoriaEntity> categoria = categoriaRepository.findById(peticion.categoriaId());
-        Optional<UsuarioEntity> solicitante = usuarioRepository.findById(peticion.solicitanteId());
-        if (existente.isEmpty() || categoria.isEmpty() || solicitante.isEmpty()) {
+        if (categoria.isEmpty()) {
             return Optional.empty();
         }
         validarCategoriaYImpacto(categoria.get(), peticion.impacto());
 
-        SolicitudEntity solicitud = existente.get();
         solicitud.setTitulo(peticion.titulo());
         solicitud.setDescripcion(peticion.descripcion());
         solicitud.setUbicacion(peticion.ubicacion());
         solicitud.setCategoria(categoria.get());
         solicitud.setImpacto(peticion.impacto());
         solicitud.setPrioridad(CalculadoraPrioridad.calcular(categoria.get().getPrioridadBase(), peticion.impacto()));
-        solicitud.setEstado(peticion.estado() == null ? solicitud.getEstado() : peticion.estado());
-        solicitud.setSolicitante(solicitante.get());
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
     }
 
@@ -121,41 +129,76 @@ public class SolicitudService {
         if (!tecnico.isActivo() || tecnico.getRol() == null || !tecnico.getRol().puedeSerAsignado()) {
             throw new ReglaNegocioException("El usuario asignado debe ser un técnico activo.");
         }
-        if (!ESTADO_ABIERTA.equals(solicitud.getEstado()) && !ESTADO_ASIGNADA.equals(solicitud.getEstado())) {
+        if (solicitud.getEstado() != EstadoSolicitud.ABIERTA
+                && solicitud.getEstado() != EstadoSolicitud.ASIGNADA) {
             throw new ReglaNegocioException("Solo se puede asignar una solicitud abierta o ya asignada.");
         }
 
         solicitud.setTecnico(tecnico);
-        if (ESTADO_ABIERTA.equals(solicitud.getEstado())) {
-            String estadoAnterior = solicitud.getEstado();
-            solicitud.setEstado(ESTADO_ASIGNADA);
-            registrarCambioEstado(solicitud, estadoAnterior, solicitud.getEstado(), coordinador);
+        if (solicitud.getEstado() == EstadoSolicitud.ABIERTA) {
+            EstadoSolicitud estadoAnterior = solicitud.transicionarA(EstadoSolicitud.ASIGNADA);
+            historialEstadoService.registrar(solicitud, estadoAnterior, solicitud.getEstado(), coordinador, null);
         }
         return aRespuesta(solicitudRepository.save(solicitud));
     }
 
-    /** Borrado fisico: la solicitud no tiene bandera de activo. */
     @Transactional
-    public boolean eliminar(Integer id) {
-        if (!solicitudRepository.existsById(id)) {
-            return false;
+    public SolicitudResponse cambiarEstado(
+            Integer solicitudId,
+            Integer usuarioId,
+            EstadoSolicitud destino,
+            Integer comentarioId) {
+        SolicitudEntity solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la solicitud indicada."));
+        UsuarioEntity usuario = usuarioRepository.findById(usuarioId)
+                .filter(UsuarioEntity::isActivo)
+                .orElseThrow(() -> new AccesoDenegadoException("El usuario no existe o está inactivo."));
+        if (destino == null) {
+            throw new IllegalArgumentException("El estado destino es obligatorio.");
         }
-        solicitudRepository.deleteById(id);
-        return true;
+        if (destino == EstadoSolicitud.ASIGNADA) {
+            throw new ReglaNegocioException("Use /api/solicitudes/{id}/asignacion para asignar la solicitud.");
+        }
+
+        EstadoSolicitud anterior = solicitud.getEstado();
+        if (anterior == null || !anterior.puedePasarA(destino)) {
+            solicitud.transicionarA(destino);
+        }
+        if (!ReglasEstadoSolicitud.puedeCambiar(
+                anterior,
+                destino,
+                usuario.getRol(),
+                usuarioId,
+                solicitud.getTecnico() == null ? null : solicitud.getTecnico().getId(),
+                solicitud.getSolicitante() == null ? null : solicitud.getSolicitante().getId())) {
+            throw new AccesoDenegadoException("El usuario no tiene permiso para realizar esta transición.");
+        }
+
+        ComentarioEntity comentario = buscarComentarioDeSolicitud(comentarioId, solicitud);
+        anterior = solicitud.transicionarA(destino);
+        historialEstadoService.registrar(solicitud, anterior, destino, usuario, comentario);
+        return aRespuesta(solicitudRepository.save(solicitud));
     }
 
-    private void registrarCambioEstado(
-            SolicitudEntity solicitud,
-            String estadoAnterior,
-            String estadoNuevo,
-            UsuarioEntity usuario) {
-        HistorialEstadoEntity historial = new HistorialEstadoEntity();
-        historial.setSolicitud(solicitud);
-        historial.setEstadoAnterior(estadoAnterior);
-        historial.setEstadoNuevo(estadoNuevo);
-        historial.setUsuario(usuario);
-        historial.setOcurridoEn(LocalDateTime.now());
-        historialEstadoRepository.save(historial);
+    @Transactional(readOnly = true)
+    public List<HistorialEstadoResponse> listarHistorial(Integer solicitudId) {
+        if (!solicitudRepository.existsById(solicitudId)) {
+            throw new RecursoNoEncontradoException("No existe la solicitud indicada.");
+        }
+        return historialEstadoService.listarPorSolicitud(solicitudId);
+    }
+
+    private ComentarioEntity buscarComentarioDeSolicitud(Integer comentarioId, SolicitudEntity solicitud) {
+        if (comentarioId == null) {
+            return null;
+        }
+        ComentarioEntity comentario = comentarioRepository.findById(comentarioId)
+                .orElseThrow(() -> new ReglaNegocioException("No existe el comentario indicado."));
+        if (comentario.getSolicitud() == null
+                || !solicitud.getId().equals(comentario.getSolicitud().getId())) {
+            throw new ReglaNegocioException("El comentario no pertenece a la solicitud indicada.");
+        }
+        return comentario;
     }
 
     private void validarCategoriaYImpacto(CategoriaEntity categoria, Impacto impacto) {
@@ -176,7 +219,7 @@ public class SolicitudService {
                 solicitud.getCategoria() == null ? null : solicitud.getCategoria().getNombre(),
                 solicitud.getImpacto() == null ? null : solicitud.getImpacto().name(),
                 solicitud.getPrioridad() == null ? null : solicitud.getPrioridad().name(),
-                solicitud.getEstado(),
+                solicitud.getEstado() == null ? null : solicitud.getEstado().name(),
                 solicitud.getSolicitante() == null ? null : solicitud.getSolicitante().getNombre(),
                 solicitud.getTecnico() == null ? null : solicitud.getTecnico().getNombre(),
                 solicitud.getCreadaEn(),

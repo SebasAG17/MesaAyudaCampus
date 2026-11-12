@@ -4,8 +4,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import co.edu.autonoma.mesa_ayuda_api.entities.HistorialEstadoEntity;
+import java.util.List;
 
 @Repository
 public interface HistorialEstadoRepository extends JpaRepository<HistorialEstadoEntity, Integer> {
+
+    List<HistorialEstadoEntity> findBySolicitudIdOrderByOcurridoEnAscIdAsc(Integer solicitudId);
 
 }
