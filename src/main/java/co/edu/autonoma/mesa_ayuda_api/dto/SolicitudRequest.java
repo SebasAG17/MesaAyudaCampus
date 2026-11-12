@@ -9,7 +9,6 @@ public record SolicitudRequest(
         Integer categoriaId,
         Impacto impacto,
         String estado,
-        Integer solicitanteId,
-        Integer tecnicoId
+        Integer solicitanteId
 ) {
 }

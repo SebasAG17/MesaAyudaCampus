@@ -9,30 +9,41 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.autonoma.mesa_ayuda_api.domain.CalculadoraPrioridad;
 import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
+import co.edu.autonoma.mesa_ayuda_api.domain.Rol;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudRequest;
 import co.edu.autonoma.mesa_ayuda_api.dto.SolicitudResponse;
 import co.edu.autonoma.mesa_ayuda_api.entities.CategoriaEntity;
+import co.edu.autonoma.mesa_ayuda_api.entities.HistorialEstadoEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.SolicitudEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.UsuarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.exception.ReglaNegocioException;
+import co.edu.autonoma.mesa_ayuda_api.exception.AccesoDenegadoException;
+import co.edu.autonoma.mesa_ayuda_api.exception.RecursoNoEncontradoException;
 import co.edu.autonoma.mesa_ayuda_api.repository.CategoriaRepository;
+import co.edu.autonoma.mesa_ayuda_api.repository.HistorialEstadoRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.SolicitudRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.UsuarioRepository;
 
 @Service
 public class SolicitudService {
 
+    private static final String ESTADO_ABIERTA = "ABIERTA";
+    private static final String ESTADO_ASIGNADA = "ASIGNADA";
+
     private final SolicitudRepository solicitudRepository;
     private final CategoriaRepository categoriaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final HistorialEstadoRepository historialEstadoRepository;
 
     public SolicitudService(
             SolicitudRepository solicitudRepository,
             CategoriaRepository categoriaRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            HistorialEstadoRepository historialEstadoRepository) {
         this.solicitudRepository = solicitudRepository;
         this.categoriaRepository = categoriaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.historialEstadoRepository = historialEstadoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +79,6 @@ public class SolicitudService {
         solicitud.setPrioridad(CalculadoraPrioridad.calcular(categoria.get().getPrioridadBase(), peticion.impacto()));
         solicitud.setEstado(peticion.estado() == null ? "ABIERTA" : peticion.estado());
         solicitud.setSolicitante(solicitante.get());
-        solicitud.setTecnico(buscarTecnico(peticion.tecnicoId()));
         solicitud.setCreadaEn(LocalDateTime.now());
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
     }
@@ -92,8 +102,36 @@ public class SolicitudService {
         solicitud.setPrioridad(CalculadoraPrioridad.calcular(categoria.get().getPrioridadBase(), peticion.impacto()));
         solicitud.setEstado(peticion.estado() == null ? solicitud.getEstado() : peticion.estado());
         solicitud.setSolicitante(solicitante.get());
-        solicitud.setTecnico(buscarTecnico(peticion.tecnicoId()));
         return Optional.of(aRespuesta(solicitudRepository.save(solicitud)));
+    }
+
+    @Transactional
+    public SolicitudResponse asignarTecnico(Integer solicitudId, Integer coordinadorId, Integer tecnicoId) {
+        SolicitudEntity solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la solicitud indicada."));
+        UsuarioEntity coordinador = usuarioRepository.findById(coordinadorId)
+                .filter(UsuarioEntity::isActivo)
+                .filter(usuario -> usuario.getRol() == Rol.COORDINADOR)
+                .orElseThrow(() -> new AccesoDenegadoException("Se requiere un coordinador activo para asignar técnicos."));
+        if (tecnicoId == null) {
+            throw new IllegalArgumentException("El campo tecnicoId es obligatorio.");
+        }
+        UsuarioEntity tecnico = usuarioRepository.findById(tecnicoId)
+                .orElseThrow(() -> new ReglaNegocioException("No existe el técnico indicado."));
+        if (!tecnico.isActivo() || tecnico.getRol() == null || !tecnico.getRol().puedeSerAsignado()) {
+            throw new ReglaNegocioException("El usuario asignado debe ser un técnico activo.");
+        }
+        if (!ESTADO_ABIERTA.equals(solicitud.getEstado()) && !ESTADO_ASIGNADA.equals(solicitud.getEstado())) {
+            throw new ReglaNegocioException("Solo se puede asignar una solicitud abierta o ya asignada.");
+        }
+
+        solicitud.setTecnico(tecnico);
+        if (ESTADO_ABIERTA.equals(solicitud.getEstado())) {
+            String estadoAnterior = solicitud.getEstado();
+            solicitud.setEstado(ESTADO_ASIGNADA);
+            registrarCambioEstado(solicitud, estadoAnterior, solicitud.getEstado(), coordinador);
+        }
+        return aRespuesta(solicitudRepository.save(solicitud));
     }
 
     /** Borrado fisico: la solicitud no tiene bandera de activo. */
@@ -106,8 +144,18 @@ public class SolicitudService {
         return true;
     }
 
-    private UsuarioEntity buscarTecnico(Integer tecnicoId) {
-        return tecnicoId == null ? null : usuarioRepository.findById(tecnicoId).orElse(null);
+    private void registrarCambioEstado(
+            SolicitudEntity solicitud,
+            String estadoAnterior,
+            String estadoNuevo,
+            UsuarioEntity usuario) {
+        HistorialEstadoEntity historial = new HistorialEstadoEntity();
+        historial.setSolicitud(solicitud);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo(estadoNuevo);
+        historial.setUsuario(usuario);
+        historial.setOcurridoEn(LocalDateTime.now());
+        historialEstadoRepository.save(historial);
     }
 
     private void validarCategoriaYImpacto(CategoriaEntity categoria, Impacto impacto) {
