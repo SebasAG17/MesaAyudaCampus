@@ -21,7 +21,7 @@ import co.edu.autonoma.mesa_ayuda_api.entities.SolicitudEntity;
 import co.edu.autonoma.mesa_ayuda_api.entities.UsuarioEntity;
 import co.edu.autonoma.mesa_ayuda_api.exception.ReglaNegocioException;
 import co.edu.autonoma.mesa_ayuda_api.repository.CategoriaRepository;
-import co.edu.autonoma.mesa_ayuda_api.repository.HistorialEstadoRepository;
+import co.edu.autonoma.mesa_ayuda_api.repository.ComentarioRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.SolicitudRepository;
 import co.edu.autonoma.mesa_ayuda_api.repository.UsuarioRepository;
 
@@ -30,7 +30,8 @@ class SolicitudServiceTest {
     private SolicitudRepository solicitudRepository;
     private CategoriaRepository categoriaRepository;
     private UsuarioRepository usuarioRepository;
-    private HistorialEstadoRepository historialEstadoRepository;
+    private HistorialEstadoService historialEstadoService;
+    private ComentarioRepository comentarioRepository;
     private SolicitudService servicio;
 
     @BeforeEach
@@ -38,9 +39,10 @@ class SolicitudServiceTest {
         solicitudRepository = mock(SolicitudRepository.class);
         categoriaRepository = mock(CategoriaRepository.class);
         usuarioRepository = mock(UsuarioRepository.class);
-        historialEstadoRepository = mock(HistorialEstadoRepository.class);
+        historialEstadoService = mock(HistorialEstadoService.class);
+        comentarioRepository = mock(ComentarioRepository.class);
         servicio = new SolicitudService(
-                solicitudRepository, categoriaRepository, usuarioRepository, historialEstadoRepository);
+                solicitudRepository, categoriaRepository, usuarioRepository, historialEstadoService, comentarioRepository);
     }
 
     @Test
@@ -81,7 +83,6 @@ class SolicitudServiceTest {
     }
 
     private SolicitudRequest peticion(Impacto impacto) {
-        return new SolicitudRequest("Falla", "Descripción", "Bloque A", 1, impacto,
-                "ABIERTA", 2);
+        return new SolicitudRequest("Falla", "Descripción", "Bloque A", 1, impacto, 2);
     }
 }
