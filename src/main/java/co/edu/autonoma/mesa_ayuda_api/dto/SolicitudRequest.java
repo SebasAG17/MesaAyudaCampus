@@ -1,12 +1,13 @@
 package co.edu.autonoma.mesa_ayuda_api.dto;
 
+import co.edu.autonoma.mesa_ayuda_api.domain.Impacto;
+
 public record SolicitudRequest(
         String titulo,
         String descripcion,
         String ubicacion,
         Integer categoriaId,
-        String impacto,
-        String prioridad,
+        Impacto impacto,
         String estado,
         Integer solicitanteId,
         Integer tecnicoId
