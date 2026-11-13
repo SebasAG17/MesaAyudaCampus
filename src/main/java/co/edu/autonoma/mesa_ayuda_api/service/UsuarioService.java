@@ -67,7 +67,7 @@ public class UsuarioService {
                 usuario.getId(),
                 usuario.getNombre(),
                 usuario.getCorreo(),
-                usuario.getRol(),
+                usuario.getRol() == null ? null : usuario.getRol().name(),
                 usuario.isActivo());
     }
 

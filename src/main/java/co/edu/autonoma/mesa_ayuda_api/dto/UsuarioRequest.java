@@ -1,9 +1,11 @@
 package co.edu.autonoma.mesa_ayuda_api.dto;
 
+import co.edu.autonoma.mesa_ayuda_api.domain.Rol;
+
 public record UsuarioRequest(
         String nombre,
         String correo,
-        String rol,
+        Rol rol,
         Boolean activo
 ) {
 }
